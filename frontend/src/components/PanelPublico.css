@@ -1,0 +1,327 @@
+.panel-publico {
+  width: 100vw;
+  min-height: 100vh;
+  background: linear-gradient(135deg, #0a0a0a 0%, #1a1a1a 100%);
+  padding: 2rem;
+}
+
+/* ============================================
+   HEADER
+   ============================================ */
+.panel-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 3rem;
+  padding-bottom: 2rem;
+  border-bottom: 3px solid #00ff88;
+}
+
+.panel-title {
+  font-size: 3rem;
+  color: #00ff88;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  text-shadow: 0 0 20px rgba(0, 255, 136, 0.5);
+}
+
+.panel-nav {
+  display: flex;
+  gap: 1rem;
+}
+
+.panel-nav button {
+  padding: 1rem 2rem;
+  font-size: 1.2rem;
+  font-weight: bold;
+  background: rgba(255, 255, 255, 0.05);
+  border: 2px solid rgba(255, 255, 255, 0.2);
+  color: #fff;
+  border-radius: 12px;
+  cursor: pointer;
+  transition: all 0.3s;
+  text-transform: uppercase;
+}
+
+.panel-nav button:hover {
+  background: rgba(255, 255, 255, 0.1);
+  border-color: #00ff88;
+}
+
+.panel-nav button.active {
+  background: linear-gradient(135deg, #00ff88 0%, #00cc6a 100%);
+  border-color: #00ff88;
+  color: #000;
+}
+
+.btn-exit {
+  background: rgba(255, 0, 0, 0.2);
+  border: 2px solid #ff0000;
+  color: #ff0000;
+  font-size: 2rem;
+  width: 60px;
+  height: 60px;
+  border-radius: 50%;
+  cursor: pointer;
+  transition: all 0.3s;
+}
+
+.btn-exit:hover {
+  background: rgba(255, 0, 0, 0.4);
+  transform: scale(1.1);
+}
+
+/* ============================================
+   CONTENT
+   ============================================ */
+.panel-content {
+  max-width: 1400px;
+  margin: 0 auto;
+}
+
+.no-data {
+  text-align: center;
+  font-size: 2rem;
+  color: #888;
+  padding: 4rem;
+}
+
+/* ============================================
+   EN VIVO
+   ============================================ */
+.en-vivo-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+  gap: 2rem;
+}
+
+.partido-vivo {
+  background: rgba(20, 20, 20, 0.8);
+  border: 2px solid #00ff88;
+  border-radius: 16px;
+  padding: 2rem;
+  box-shadow: 0 4px 20px rgba(0, 255, 136, 0.3);
+}
+
+.partido-header {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 1.5rem;
+}
+
+.cancha-badge {
+  background: rgba(0, 119, 255, 0.2);
+  border: 2px solid #0077ff;
+  color: #0077ff;
+  padding: 0.5rem 1rem;
+  border-radius: 8px;
+  font-weight: bold;
+  font-size: 0.9rem;
+}
+
+.tiempo-badge {
+  background: rgba(255, 0, 0, 0.2);
+  border: 2px solid #ff0000;
+  color: #ff0000;
+  padding: 0.5rem 1rem;
+  border-radius: 8px;
+  font-weight: bold;
+  font-size: 0.9rem;
+  animation: pulse-live 1.5s infinite;
+}
+
+@keyframes pulse-live {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.6; }
+}
+
+.partido-score {
+  display: flex;
+  align-items: center;
+  justify-content: space-around;
+  gap: 2rem;
+}
+
+.partido-score .equipo {
+  flex: 1;
+  text-align: center;
+}
+
+.partido-score .nombre {
+  font-size: 1.5rem;
+  font-weight: bold;
+  color: #fff;
+  display: block;
+  margin-bottom: 1rem;
+}
+
+.partido-score .puntos {
+  font-size: 4rem;
+  font-weight: 900;
+  color: #00ff88;
+  text-shadow: 0 0 20px rgba(0, 255, 136, 0.5);
+}
+
+.partido-score .vs {
+  font-size: 2rem;
+  color: rgba(255, 255, 255, 0.3);
+  font-weight: bold;
+}
+
+.punto-oro-badge {
+  margin-top: 1.5rem;
+  text-align: center;
+  background: linear-gradient(135deg, #ffd700 0%, #ffaa00 100%);
+  color: #000;
+  padding: 0.75rem;
+  border-radius: 8px;
+  font-weight: bold;
+  font-size: 1.2rem;
+}
+
+/* ============================================
+   STANDINGS (TABLA DE POSICIONES)
+   ============================================ */
+.standings-table {
+  overflow-x: auto;
+}
+
+.standings-table table {
+  width: 100%;
+  border-collapse: collapse;
+  background: rgba(20, 20, 20, 0.8);
+  border-radius: 16px;
+  overflow: hidden;
+}
+
+.standings-table thead {
+  background: linear-gradient(135deg, #00ff88 0%, #00cc6a 100%);
+  color: #000;
+}
+
+.standings-table th {
+  padding: 1.5rem 1rem;
+  text-align: left;
+  font-weight: bold;
+  text-transform: uppercase;
+  font-size: 1.1rem;
+}
+
+.standings-table tbody tr {
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  transition: background 0.3s;
+}
+
+.standings-table tbody tr:hover {
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.standings-table tbody tr.clasificado {
+  background: rgba(0, 255, 136, 0.1);
+}
+
+.standings-table td {
+  padding: 1.5rem 1rem;
+  font-size: 1.2rem;
+  color: #fff;
+}
+
+.standings-table .pos {
+  font-weight: bold;
+  font-size: 1.5rem;
+  color: #00ff88;
+  text-align: center;
+  width: 60px;
+}
+
+.standings-table .equipo {
+  font-weight: bold;
+  font-size: 1.3rem;
+}
+
+.standings-table .puntos {
+  font-weight: bold;
+  font-size: 1.5rem;
+  color: #00ff88;
+  text-align: center;
+}
+
+.standings-table .positivo {
+  color: #00ff88;
+}
+
+.standings-table .negativo {
+  color: #ff6b6b;
+}
+
+/* ============================================
+   RESULTADOS
+   ============================================ */
+.resultados-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+  gap: 1.5rem;
+}
+
+.resultado-item {
+  background: rgba(20, 20, 20, 0.8);
+  border: 2px solid rgba(255, 255, 255, 0.1);
+  border-radius: 12px;
+  padding: 1.5rem;
+  transition: all 0.3s;
+}
+
+.resultado-item:hover {
+  border-color: #00ff88;
+  box-shadow: 0 4px 20px rgba(0, 255, 136, 0.2);
+}
+
+.resultado-header {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 1rem;
+  font-size: 0.9rem;
+  color: #888;
+}
+
+.resultado-score {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.resultado-score .equipo {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.75rem;
+  background: rgba(255, 255, 255, 0.03);
+  border-radius: 8px;
+}
+
+.resultado-score .equipo.ganador {
+  background: rgba(0, 255, 136, 0.1);
+  border: 2px solid #00ff88;
+}
+
+.resultado-score .nombre {
+  font-weight: bold;
+  font-size: 1.1rem;
+}
+
+.resultado-score .puntos {
+  font-size: 1.8rem;
+  font-weight: bold;
+  color: #00ff88;
+}
+
+.badge-oro {
+  margin-top: 1rem;
+  text-align: center;
+  background: linear-gradient(135deg, #ffd700 0%, #ffaa00 100%);
+  color: #000;
+  padding: 0.5rem;
+  border-radius: 6px;
+  font-weight: bold;
+  font-size: 0.9rem;
+}
