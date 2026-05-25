@@ -75,7 +75,6 @@ def init_db():
     
     print("✅ Database schema initialized successfully")
 
-
 def create_default_users():
     """Create default users for canchas and public access"""
     from passlib.context import CryptContext
@@ -93,7 +92,9 @@ def create_default_users():
     with get_db() as conn:
         with conn.cursor() as cur:
             for username, password, tipo in users:
-                password_hash = pwd_context.hash(password)
+                # Truncar password a 72 bytes (límite de bcrypt)
+                password_truncated = password[:72]
+                password_hash = pwd_context.hash(password_truncated)
                 cur.execute(
                     """
                     INSERT INTO usuarios (username, password_hash, tipo)

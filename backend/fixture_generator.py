@@ -84,37 +84,29 @@ def generate_time_slots(start_time: str = "14:00", slot_duration: int = 15,
 
 
 def can_team_play_in_slot(team: int, slot_num: int, day: int, 
-                          assignments: Dict, min_rest_slots: int = 1) -> bool:
+                          assignments: Dict, min_rest_slots: int = 0) -> bool:
     """
     Verifica si un equipo puede jugar en un slot específico
+    RESTRICCIÓN ÚNICA: Un equipo NO puede estar en 2 canchas al mismo tiempo
     
     Args:
         team: ID del equipo
         slot_num: Número de slot
         day: Día del torneo
         assignments: Diccionario de asignaciones actuales
-        min_rest_slots: Número mínimo de slots de descanso
+        min_rest_slots: (IGNORADO - permitimos juegos consecutivos)
     
     Returns:
         True si el equipo puede jugar en ese slot
     """
-    # Verificar si el equipo ya está jugando en este slot (en cualquier cancha)
+    # ÚNICA verificación: el equipo NO puede jugar en este slot en otra cancha
     for (d, s, c), match in assignments.items():
         if d == day and s == slot_num:
             if team in match:
-                return False
+                return False  # Ya está jugando en otra cancha en este slot
     
-    # Verificar descanso mínimo
-    for offset in range(1, min_rest_slots + 1):
-        check_slot = slot_num - offset
-        if check_slot > 0:
-            for court in [1, 2, 3]:
-                if (day, check_slot, court) in assignments:
-                    if team in assignments[(day, check_slot, court)]:
-                        return False
-    
+    # Si no está jugando en este slot, puede jugar
     return True
-
 
 def assign_matches_to_slots(matches: List[Tuple[int, int]], 
                             slots: List[Dict]) -> List[Dict]:
@@ -148,19 +140,19 @@ def assign_matches_to_slots(matches: List[Tuple[int, int]],
                 break
             
             # Buscar un partido que pueda jugarse en este slot
-            for i, (team1, team2) in enumerate(unassigned):
+            for i, (team1, team2, ronda) in enumerate(unassigned):
                 if (can_team_play_in_slot(team1, slot_num, day, assignments) and
                     can_team_play_in_slot(team2, slot_num, day, assignments)):
                     
                     # Asignar partido
                     key = (day, slot_num, court_slot['cancha'])
-                    assignments[key] = (team1, team2)
+                    assignments[key] = (team1, team2, ronda)
                     unassigned.pop(i)
                     break
     
     # Convertir assignments a lista de resultados
     result = []
-    for (day, slot_num, court), (team1, team2) in assignments.items():
+    for (day, slot_num, court), (team1, team2, ronda) in assignments.items():
         # Encontrar el slot_id correspondiente
         slot_id = None
         for slot in slots:
@@ -174,6 +166,7 @@ def assign_matches_to_slots(matches: List[Tuple[int, int]],
             'slot_id': slot_id,
             'equipo_local': team1,
             'equipo_visitante': team2,
+	    'ronda': ronda,
             'dia': day,
             'numero_slot': slot_num,
             'cancha': court
@@ -190,6 +183,7 @@ def assign_matches_to_slots(matches: List[Tuple[int, int]],
 def generate_fixture() -> Tuple[List[Dict], List[Dict]]:
     """
     Genera el fixture completo del campeonato
+    FASE GRUPOS: 3 rondas de todos vs todos (84 partidos)
     
     Returns:
         Tupla de (slots, partidos_asignados)
@@ -197,27 +191,34 @@ def generate_fixture() -> Tuple[List[Dict], List[Dict]]:
     print("🏐 Generando fixture del Campeonato de Wally...")
     
     # 1. Generar todos los enfrentamientos (todos vs todos)
-    matches = generate_round_robin_matches(8)
-    print(f"✅ Generados {len(matches)} partidos (todos vs todos)")
+    matches_base = generate_round_robin_matches(8)
+    print(f"✅ Generados {len(matches_base)} enfrentamientos únicos (todos vs todos)")
     
-    # 2. Generar slots de tiempo
+    # 2. Triplicar para 3 rondas
+    matches = []
+    for ronda in [1, 2, 3]:
+        for match in matches_base:
+            matches.append((*match, ronda))  # (local, visitante, ronda)
+    
+    print(f"✅ Total de sets a jugar: {len(matches)} (3 rondas)")
+    
+    # 3. Generar slots de tiempo
     slots = generate_time_slots()
     print(f"✅ Generados {len(slots)} slots de tiempo (2 días × 14 slots × 3 canchas)")
     
-    # 3. Asignar partidos a slots con restricciones
+    # 4. Asignar partidos a slots con restricciones
     assigned_matches = assign_matches_to_slots(matches, slots)
     print(f"✅ Asignados {len(assigned_matches)} partidos a slots")
     
-    # 4. Estadísticas
+    # 5. Estadísticas
     total_slots_needed = len(matches) / 3  # 3 canchas en paralelo
     print(f"\n📊 Estadísticas:")
-    print(f"   Total partidos: {len(matches)}")
+    print(f"   Total sets fase grupos: {len(matches)}")
     print(f"   Slots necesarios: {total_slots_needed:.1f}")
     print(f"   Slots disponibles: {len(slots) / 3:.1f} ({len(slots)} total)")
     print(f"   Utilización: {len(assigned_matches) / len(slots) * 100:.1f}%")
     
     return slots, assigned_matches
-
 
 def validate_fixture(assigned_matches: List[Dict]):
     """

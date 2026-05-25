@@ -1,5 +1,14 @@
-// API Configuration
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
+// API Configuration - Auto-detecta IP para móvil
+const getApiUrl = () => {
+  const hostname = window.location.hostname;
+  if (hostname === 'localhost' || hostname === '127.0.0.1') {
+    return 'http://localhost:8000';
+  }
+  // En móvil, usar la misma IP que el frontend
+  return `http://${hostname}:8000`;
+};
+
+const API_BASE_URL = import.meta.env.VITE_API_URL || getApiUrl();
 
 export const api = {
   async request(endpoint, options = {}) {

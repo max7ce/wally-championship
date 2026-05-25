@@ -3,9 +3,19 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    
+    <!-- PWA Meta Tags -->
+    <meta name="theme-color" content="#00d4ff" />
+    <meta name="description" content="Sistema de gestión de campeonato de Wally" />
+    <link rel="manifest" href="/manifest.json" />
+    
+    <!-- Mobile App -->
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="Wally">
+    <link rel="apple-touch-icon" href="/icon-192.png" />
+    
     <title>Wally Championship 2025</title>
     <style>
       * {
@@ -33,5 +43,20 @@
   <body>
     <div id="root"></div>
     <script type="module" src="/src/main.jsx"></script>
+    
+    <!-- Registrar Service Worker -->
+    <script>
+      if ('serviceWorker' in navigator) {
+        window.addEventListener('load', () => {
+          navigator.serviceWorker.register('/sw.js')
+            .then((registration) => {
+              console.log('✅ Service Worker registrado:', registration.scope);
+            })
+            .catch((error) => {
+              console.error('❌ Error registrando Service Worker:', error);
+            });
+        });
+      }
+    </script>
   </body>
 </html>

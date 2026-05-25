@@ -11,7 +11,8 @@ const Scoreboard = ({ cancha, onLogout }) => {
   const [puntoDeOro, setPuntoDeOro] = useState(false);
   const [loading, setLoading] = useState(true);
   const [mensaje, setMensaje] = useState('');
-  
+  const [mostrarModalWO, setMostrarModalWO] = useState(false);
+
   const audioRef = useRef(null);
   const timerRef = useRef(null);
   const autosaveRef = useRef(null);
@@ -25,7 +26,7 @@ const Scoreboard = ({ cancha, onLogout }) => {
     try {
       setLoading(true);
       const data = await api.get(`/partidos/proximo/${cancha}`);
-      
+
       if (data.message) {
         setMensaje(data.message);
         setPartido(null);
@@ -34,7 +35,7 @@ const Scoreboard = ({ cancha, onLogout }) => {
         setPuntosLocal(data.puntos_local || 0);
         setPuntosVisitante(data.puntos_visitante || 0);
         setPuntoDeOro(data.punto_de_oro || false);
-        
+
         // Si el partido está en juego, reanudar cronómetro
         if (data.estado === 'en_juego') {
           setIsPaused(false);
@@ -62,7 +63,7 @@ const Scoreboard = ({ cancha, onLogout }) => {
         });
       }, 1000);
     }
-    
+
     return () => {
       if (timerRef.current) {
         clearInterval(timerRef.current);
@@ -77,7 +78,7 @@ const Scoreboard = ({ cancha, onLogout }) => {
         guardarScore(false); // false = no finalizar
       }, 3000);
     }
-    
+
     return () => {
       if (autosaveRef.current) {
         clearInterval(autosaveRef.current);
@@ -90,16 +91,16 @@ const Scoreboard = ({ cancha, onLogout }) => {
     const audioContext = new (window.AudioContext || window.webkitAudioContext)();
     const oscillator = audioContext.createOscillator();
     const gainNode = audioContext.createGain();
-    
+
     oscillator.connect(gainNode);
     gainNode.connect(audioContext.destination);
-    
+
     oscillator.frequency.value = 800;
     oscillator.type = 'sine';
-    
+
     gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
     gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.5);
-    
+
     oscillator.start(audioContext.currentTime);
     oscillator.stop(audioContext.currentTime + 0.5);
   };
@@ -117,21 +118,21 @@ const Scoreboard = ({ cancha, onLogout }) => {
     if (local >= 25 || visitante >= 25) {
       return true;
     }
-    
+
     // Punto de oro
     if (puntoDeOro && local !== visitante) {
       return true;
     }
-    
+
     return false;
   };
 
   const sumarPuntoLocal = async () => {
     if (!partido || partido.estado === 'finalizado') return;
-    
+
     const nuevoPuntaje = puntosLocal + 1;
     setPuntosLocal(nuevoPuntaje);
-    
+
     // Iniciar partido si está pendiente
     if (partido.estado === 'pendiente') {
       await api.post('/partidos/estado', {
@@ -141,7 +142,7 @@ const Scoreboard = ({ cancha, onLogout }) => {
       setPartido({ ...partido, estado: 'en_juego' });
       setIsPaused(false);
     }
-    
+
     if (verificarGanador(nuevoPuntaje, puntosVisitante)) {
       finalizarPartido();
     }
@@ -149,10 +150,10 @@ const Scoreboard = ({ cancha, onLogout }) => {
 
   const sumarPuntoVisitante = async () => {
     if (!partido || partido.estado === 'finalizado') return;
-    
+
     const nuevoPuntaje = puntosVisitante + 1;
     setPuntosVisitante(nuevoPuntaje);
-    
+
     // Iniciar partido si está pendiente
     if (partido.estado === 'pendiente') {
       await api.post('/partidos/estado', {
@@ -162,7 +163,7 @@ const Scoreboard = ({ cancha, onLogout }) => {
       setPartido({ ...partido, estado: 'en_juego' });
       setIsPaused(false);
     }
-    
+
     if (verificarGanador(puntosLocal, nuevoPuntaje)) {
       finalizarPartido();
     }
@@ -186,7 +187,7 @@ const Scoreboard = ({ cancha, onLogout }) => {
 
   const guardarScore = async (finalizar = false) => {
     if (!partido) return;
-    
+
     try {
       let terminadoPor = null;
       if (finalizar) {
@@ -198,7 +199,7 @@ const Scoreboard = ({ cancha, onLogout }) => {
           terminadoPor = 'tiempo';
         }
       }
-      
+
       await api.post('/partidos/score', {
         partido_id: partido.partido_id,
         puntos_local: puntosLocal,
@@ -207,7 +208,7 @@ const Scoreboard = ({ cancha, onLogout }) => {
         terminado_por: terminadoPor,
         tiempo_jugado: (14 * 60) - tiempo
       });
-      
+
       if (finalizar) {
         await api.post(`/partidos/${partido.partido_id}/finalizar`);
       }
@@ -219,7 +220,7 @@ const Scoreboard = ({ cancha, onLogout }) => {
   const finalizarPartido = async () => {
     setIsPaused(true);
     await guardarScore(true);
-    
+
     // Mostrar resultado final brevemente
     setTimeout(() => {
       cargarProximoPartido();
@@ -228,6 +229,54 @@ const Scoreboard = ({ cancha, onLogout }) => {
       setTiempo(14 * 60);
       setPuntoDeOro(false);
     }, 3000);
+  };
+
+  const registrarWalkOver = async (equipoAusente) => {
+    if (!partido) return;
+
+    try {
+      // Determinar puntaje según quién faltó
+      const esLocalAusente = equipoAusente === 'local';
+      const puntosLocal = esLocalAusente ? 0 : 25;
+      const puntosVisitante = esLocalAusente ? 25 : 0;
+
+      // Actualizar estado a en_juego primero
+      await api.post('/partidos/estado', {
+        partido_id: partido.partido_id,
+        estado: 'en_juego'
+      });
+
+      // Guardar score de WO (25-0)
+      await api.post('/partidos/score', {
+        partido_id: partido.partido_id,
+        puntos_local: puntosLocal,
+        puntos_visitante: puntosVisitante,
+        punto_de_oro: false,
+        terminado_por: 'walkover',
+        tiempo_jugado: 0
+      });
+
+      // Finalizar partido
+      await api.post(`/partidos/${partido.partido_id}/finalizar`);
+
+      // Cerrar modal
+      setMostrarModalWO(false);
+
+      // Mostrar resultado brevemente y cargar siguiente
+      setPuntosLocal(puntosLocal);
+      setPuntosVisitante(puntosVisitante);
+      setTimeout(() => {
+        cargarProximoPartido();
+        setPuntosLocal(0);
+        setPuntosVisitante(0);
+        setTiempo(14 * 60);
+        setPuntoDeOro(false);
+      }, 2000);
+
+    } catch (error) {
+      console.error('Error registrando WO:', error);
+      alert('Error al registrar Walk Over');
+    }
   };
 
   const formatearTiempo = (segundos) => {
@@ -265,12 +314,21 @@ const Scoreboard = ({ cancha, onLogout }) => {
       {/* Cronómetro */}
       <div className={`cronometro ${tiempo <= 60 ? 'warning' : ''} ${tiempo === 0 ? 'finished' : ''}`}>
         <div className="tiempo">{formatearTiempo(tiempo)}</div>
-        <button 
-          onClick={togglePausa}
-          className={`btn-pause ${isPaused ? 'paused' : ''}`}
-        >
-          {isPaused ? '▶ CONTINUAR' : '⏸ PAUSE'}
-        </button>
+        <div className="cronometro-controls">
+          <button
+            onClick={togglePausa}
+            className={`btn-pause ${isPaused ? 'paused' : ''}`}
+          >
+            {isPaused ? '▶ CONTINUAR' : '⏸ PAUSE'}
+          </button>
+          <button
+            onClick={() => setMostrarModalWO(true)}
+            className="btn-wo"
+            disabled={partido.estado === 'finalizado'}
+          >
+            WO
+          </button>
+        </div>
       </div>
 
       {/* Punto de Oro Alert */}
@@ -283,7 +341,7 @@ const Scoreboard = ({ cancha, onLogout }) => {
       {/* Scoreboard principal */}
       <div className="score-area">
         {/* Local */}
-        <div 
+        <div
           className="team-side local"
           onClick={sumarPuntoLocal}
         >
@@ -292,7 +350,7 @@ const Scoreboard = ({ cancha, onLogout }) => {
             <h2 className="team-name">{partido.equipo_local}</h2>
             <div className="score">{puntosLocal}</div>
           </div>
-          <button 
+          <button
             className="btn-minus"
             onClick={(e) => {
               e.stopPropagation();
@@ -307,7 +365,7 @@ const Scoreboard = ({ cancha, onLogout }) => {
         <div className="vs-divider">VS</div>
 
         {/* Visitante */}
-        <div 
+        <div
           className="team-side visitante"
           onClick={sumarPuntoVisitante}
         >
@@ -316,7 +374,7 @@ const Scoreboard = ({ cancha, onLogout }) => {
             <h2 className="team-name">{partido.equipo_visitante}</h2>
             <div className="score">{puntosVisitante}</div>
           </div>
-          <button 
+          <button
             className="btn-minus"
             onClick={(e) => {
               e.stopPropagation();
@@ -330,7 +388,7 @@ const Scoreboard = ({ cancha, onLogout }) => {
 
       {/* Botón Finalizar */}
       <div className="footer">
-        <button 
+        <button
           onClick={finalizarPartido}
           className="btn-fin"
           disabled={partido.estado === 'pendiente'}
@@ -338,6 +396,38 @@ const Scoreboard = ({ cancha, onLogout }) => {
           ✓ FINALIZAR PARTIDO
         </button>
       </div>
+
+      {/* Modal WalkOver */}
+      {mostrarModalWO && (
+        <div className="modal-overlay" onClick={() => setMostrarModalWO(false)}>
+          <div className="modal-wo" onClick={(e) => e.stopPropagation()}>
+            <h2>Walk Over (WO)</h2>
+            <p>Selecciona el equipo que NO se presentó:</p>
+            <div className="modal-buttons">
+              <button
+                onClick={() => registrarWalkOver('local')}
+                className="btn-wo-equipo local"
+              >
+                {partido.equipo_local}
+                <span className="resultado-wo">Pierde 0-25</span>
+              </button>
+              <button
+                onClick={() => registrarWalkOver('visitante')}
+                className="btn-wo-equipo visitante"
+              >
+                {partido.equipo_visitante}
+                <span className="resultado-wo">Pierde 0-25</span>
+              </button>
+            </div>
+            <button
+              onClick={() => setMostrarModalWO(false)}
+              className="btn-cancelar"
+            >
+              Cancelar
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

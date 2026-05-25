@@ -8,23 +8,11 @@ from fastapi.security import HTTPBasic, HTTPBasicCredentials
 from pydantic import BaseModel
 from typing import List, Optional
 import os
-import bcrypt
+from passlib.context import CryptContext
 import secrets
 
 from database import get_db, execute_query, execute_many, init_db, create_default_users
 from fixture_generator import generate_fixture, validate_fixture
-
-# ============================================
-# Password Functions (bcrypt directo)
-# ============================================
-def verify_password(plain_password: str, hashed_password: str) -> bool:
-    """Verificar password usando bcrypt directamente"""
-    return bcrypt.checkpw(plain_password.encode('utf-8'), hashed_password.encode('utf-8'))
-
-def get_password_hash(password: str) -> str:
-    """Hashear password usando bcrypt directamente"""
-    return bcrypt.hashpw(password.encode('utf-8'), bcrypt.gensalt()).decode('utf-8')
-
 
 # ============================================
 # App Configuration
@@ -36,7 +24,7 @@ app = FastAPI(
 )
 
 # CORS
-CORS_ORIGINS = os.getenv("CORS_ORIGINS", "http://localhost:5173,http://192.168.1.12:5173").split(",")
+CORS_ORIGINS = os.getenv("CORS_ORIGINS", "http://localhost:5173").split(",")
 app.add_middleware(
     CORSMiddleware,
     allow_origins=CORS_ORIGINS,
@@ -47,6 +35,7 @@ app.add_middleware(
 
 # Security
 security = HTTPBasic()
+pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 
 # ============================================
@@ -82,10 +71,8 @@ class ScoreUpdate(BaseModel):
     puntos_local: int
     puntos_visitante: int
     punto_de_oro: bool = False
-    terminado_por: Optional[str] = None  # 'puntos', 'tiempo', 'punto_oro', 'walkover'
+    terminado_por: Optional[str] = None  # 'puntos', 'tiempo', 'punto_oro'
     tiempo_jugado: Optional[int] = None  # segundos
-    es_walkover: bool = False  # NUEVO
-    equipo_ausente_id: Optional[int] = None  # NUEVO
 
 class EstadoUpdate(BaseModel):
     partido_id: int
@@ -120,7 +107,7 @@ def verify_user(credentials: HTTPBasicCredentials = Depends(security)):
     
     user = users[0]
     
-    if not verify_password(credentials.password, user['password_hash']):
+    if not pwd_context.verify(credentials.password, user['password_hash']):
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Contraseña incorrecta",
